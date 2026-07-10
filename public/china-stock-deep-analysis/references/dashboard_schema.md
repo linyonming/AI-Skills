@@ -1125,57 +1125,69 @@ def validate_dash(path, html_path, quick=False, debate_required=True):
 
 ## 27. 最小合法样例（deep，删减展示）
 
-```json
-{
-  "meta": {
-    "schema_version": "1.0.0",
-    "skill": "china-fund-deep-analysis",
-    "code": "005827",
-    "name": "易方达蓝筹精选混合",
-    "share_class": "A",
-    "fund_type": "hybrid_equity",
-    "mode": "deep",
-    "as_of": "2026-05-11",
-    "quick_mode": false,
-    "debate_enabled": true,
-    "debate_fallback": false,
-    "html_path": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html"
-  },
-  "summary": {
-    "headline": "中长期可持有，回撤中等，适合分批定投",
-    "one_liner": "易方达蓝筹精选综合86分，建议定投",
-    "decision_tag": "建议定投",
-    "star": 4,
-    "score_total": 86.0,
-    "confidence": "medium",
-    "disclaimer": "基于公开信息研究，不构成投资建议"
-  },
-  "profile": {"code": "005827", "name": "易方达蓝筹精选混合", "fund_type": "hybrid_equity"},
-  "metrics": {"nav": 1.2345, "return_1y": 18.2, "return_3y": 42.5, "max_drawdown": -22.4, "sharpe": 1.42},
-  "scores": {
-    "total": 86.0,
-    "breakdown": {"return": 88, "risk": 76, "manager": 84, "stability": 78, "size_liquidity": 80},
-    "explain": {"return": "中长期收益较好", "risk": "回撤中等", "manager": "经理稳定", "stability": "轻度漂移", "size_liquidity": "规模偏大"}
-  },
-  "nav_series": [{"date": "2025-05-12", "nav": 1.10, "acc_nav": 2.00}],
-  "drawdown_series": [{"date": "2025-05-12", "drawdown": 0.0}],
-  "returns": {},
-  "risk": {"window": "3y", "max_drawdown": -22.4, "sharpe": 1.42},
-  "portfolio": {"as_of": "2026-03-31", "top_holdings": [], "lag_note": "持仓截至季报"},
-  "manager": {"managers": [], "recent_change": false, "score": 84},
-  "style_drift": {"level": "轻度", "score": 28},
-  "sip": {"suitable": true, "score": 84},
+```markdown
   "action_map": {
     "hold": {"title": "继续持有条件", "items": ["经理未离任"]},
     "sip": {"title": "定投观察区", "items": ["期限≥3年"]},
     "reduce": {"title": "减仓警戒区", "items": ["漂移升温"]},
     "take_profit": {"title": "止盈条件", "items": ["达到目标收益"]},
-    "invalidate": {"title": "失效警戒", "items": ["经理离任"], "key_level": "回撤跌破警戒带需复盘"}
+    "invalidate": {
+      "title": "失效警戒",
+      "items": ["经理离任"],
+      "key_level": "回撤跌破警戒带需复盘"
+    }
   },
   "peers": [
-    {"code": "005827", "name": "易方达蓝筹精选混合", "is_primary": true, "score_total": 86.0}
+    {
+      "code": "005827",
+      "name": "易方达蓝筹精选混合",
+      "is_primary": true,
+      "score_total": 86.0,
+      "return_1y": 18.2,
+      "max_drawdown": -22.4,
+      "decision_tag": "建议定投",
+      "one_liner": "质量蓝筹代表，回撤中等"
+    },
+    {
+      "code": "260108",
+      "name": "景顺长城新兴成长混合",
+      "is_primary": false,
+      "score_total": 88.0,
+      "return_1y": 16.5,
+      "max_drawdown": -19.0,
+      "decision_tag": "建议观望",
+      "one_liner": "收益-回撤更均衡的观察替代"
+    },
+    {
+      "code": "110011",
+      "name": "易方达优质精选混合",
+      "is_primary": false,
+      "score_total": 80.0,
+      "return_1y": 14.2,
+      "max_drawdown": -24.1,
+      "decision_tag": "建议继续持有",
+      "one_liner": "同门风格参考"
+    },
+    {
+      "code": "000001",
+      "name": "示例同类基金",
+      "is_primary": false,
+      "score_total": 75.0,
+      "return_1y": 10.0,
+      "max_drawdown": -20.0,
+      "decision_tag": "建议观望",
+      "one_liner": "对照样本"
+    }
   ],
-  "better_choices": [],
+  "better_choices": [
+    {
+      "code": "260108",
+      "name": "景顺长城新兴成长混合",
+      "why": "同类中收益-回撤更均衡，适合作为替代观察",
+      "score_total": 88.0,
+      "relation": "同类主动权益"
+    }
+  ],
   "peer_errors": [],
   "risks": [
     {
@@ -1183,25 +1195,66 @@ def validate_dash(path, html_path, quick=False, debate_required=True):
       "title": "回撤风险",
       "level": "中",
       "severity": "high",
-      "summary": "回撤中等",
+      "summary": "历史最大回撤约 22%，波动不低。",
       "evidence": ["max_drawdown=-22.4"],
-      "monitor": "跟踪当前回撤",
-      "mitigation": "控制仓位"
+      "monitor": "当前回撤与修复速度",
+      "mitigation": "定投代替一次性重仓"
+    },
+    {
+      "id": "size",
+      "title": "规模风险",
+      "level": "中",
+      "severity": "medium",
+      "summary": "规模偏大，可能影响灵活度。",
+      "evidence": ["scale_yi=312.5"],
+      "monitor": "季末规模变化",
+      "mitigation": "避免拥挤阶段大额加仓"
+    },
+    {
+      "id": "data_lag",
+      "title": "持仓滞后",
+      "level": "低",
+      "severity": "medium",
+      "summary": "持仓为季报口径。",
+      "evidence": ["portfolio.as_of=2026-03-31"],
+      "monitor": "最新季报披露",
+      "mitigation": "结论标注时效"
     }
   ],
   "data_quality": {
     "overall": "B",
     "confidence": "medium",
-    "sources": [],
+    "sources": [
+      {
+        "name": "天天基金",
+        "level": "B",
+        "fields": ["nav", "returns"],
+        "checked_at": "2026-05-11T11:50:00+08:00"
+      }
+    ],
     "cross_checks": [],
     "verified": ["nav双源"],
-    "pending": ["晨星评级缺失"],
+    "pending": ["晨星评级未取到"],
     "missing_fields": ["morningstar_rating"],
     "anomalies": [],
-    "notes": ["不构成投资建议"]
+    "stale_fields": [
+      {
+        "field": "portfolio",
+        "as_of": "2026-03-31",
+        "note": "持仓披露滞后"
+      }
+    ],
+    "notes": ["公开信息研究，不构成投资建议"]
   },
   "glossary": [
-    {"term": "最大回撤", "plain": "从高点到低点最多跌了多少"}
+    {
+      "term": "最大回撤",
+      "plain": "从阶段最高点跌到最低点最多亏多少。"
+    },
+    {
+      "term": "定投",
+      "plain": "按固定节奏分批买入，摊薄成本，不保证盈利。"
+    }
   ],
   "debate": {
     "mode": "ai_native",
@@ -1210,56 +1263,190 @@ def validate_dash(path, html_path, quick=False, debate_required=True):
     "confidence": "medium",
     "bull_pct": 67,
     "bear_pct": 17,
-    "summary": "偏多，适合定投",
+    "neutral_pct": 17,
+    "summary": "整体偏多，适合持有/定投，但回撤与规模限制激进加仓。",
     "action": "建议定投",
-    "key_level": "经理离任或回撤破警戒带需复盘",
+    "key_level": "核心经理离任，或回撤跌破近3年警戒带（约-25%）时停止加仓并复盘",
+    "tally": {
+      "bull": 4,
+      "bear": 1,
+      "neutral": 1,
+      "bull_pct": 67,
+      "bear_pct": 17,
+      "neutral_pct": 17
+    },
     "votes": [
-      {"role_id": "manager_analyst", "role_name": "基金经理分析师", "direction": "bull", "confidence": 0.7, "one_liner": "经理稳定", "reasoning": "任期长", "evidence": ["tenure"], "risks": ["离任"], "invalidators": ["离任"]},
-      {"role_id": "risk_analyst", "role_name": "风险分析师", "direction": "neutral", "confidence": 0.7, "one_liner": "回撤中等", "reasoning": "波动不低", "evidence": ["dd"], "risks": ["弱市"], "invalidators": ["回撤恶化"]},
-      {"role_id": "quant_analyst", "role_name": "量化分析师", "direction": "bull", "confidence": 0.7, "one_liner": "中长期统计不弱", "reasoning": "1Y/3Y尚可", "evidence": ["ret"], "risks": ["回吐"], "invalidators": ["排名滑坡"]},
-      {"role_id": "allocator_analyst", "role_name": "资产配置分析师", "direction": "bull", "confidence": 0.7, "one_liner": "可作主动权益仓", "reasoning": "定位清晰", "evidence": ["role"], "risks": ["拥挤"], "invalidators": ["更优替代"]},
-      {"role_id": "longterm_analyst", "role_name": "长期投资分析师", "direction": "bull", "confidence": 0.7, "one_liner": "适合3年+定投", "reasoning": "定投适配高", "evidence": ["sip"], "risks": ["短持有"], "invalidators": ["期限过短"]},
-      {"role_id": "contrarian_analyst", "role_name": "反方分析师", "direction": "bear", "confidence": 0.7, "one_liner": "规模与滞后是隐患", "reasoning": "高分不等于低风险", "evidence": ["scale"], "risks": ["误判"], "invalidators": ["规模优化"]}
-    ]
+      {
+        "role_id": "manager_analyst",
+        "role_name": "基金经理分析师",
+        "direction": "bull",
+        "confidence": 0.78,
+        "score_hint": 84,
+        "one_liner": "经理稳定，是中长期持有加分项。",
+        "reasoning": "任期长、未见近期核心更换。",
+        "evidence": ["tenure_years=7.6", "recent_change=false"],
+        "risks": ["能力圈切换可能削弱叙事"],
+        "invalidators": ["核心经理离任"]
+      },
+      {
+        "role_id": "risk_analyst",
+        "role_name": "风险分析师",
+        "direction": "neutral",
+        "confidence": 0.70,
+        "score_hint": 76,
+        "one_liner": "回撤中等可持有，但不是稳钱工具。",
+        "reasoning": "最大回撤与波动要求承受权益风险。",
+        "evidence": ["max_drawdown=-22.4", "volatility=18.6"],
+        "risks": ["弱市连续回撤影响持有体验"],
+        "invalidators": ["回撤显著恶化且修复变慢"]
+      },
+      {
+        "role_id": "quant_analyst",
+        "role_name": "量化分析师",
+        "direction": "bull",
+        "confidence": 0.74,
+        "score_hint": 88,
+        "one_liner": "1Y/3Y 与 Sharpe 支持统计优势。",
+        "reasoning": "多窗口收益与同类百分位较一致。",
+        "evidence": ["return_1y=18.2", "return_3y=42.5", "sharpe=1.42"],
+        "risks": ["Alpha 消失后排名可能回吐"],
+        "invalidators": ["连续多窗口跌出同类前50%"]
+      },
+      {
+        "role_id": "allocator_analyst",
+        "role_name": "资产配置分析师",
+        "direction": "bull",
+        "confidence": 0.69,
+        "score_hint": 82,
+        "one_liner": "适合作为主动权益核心仓。",
+        "reasoning": "定位清晰，替代优势未形成压倒性。",
+        "evidence": ["score_total=86", "peers>=4"],
+        "risks": ["组合同类暴露过高会拥挤"],
+        "invalidators": ["出现显著更优且高相关替代"]
+      },
+      {
+        "role_id": "longterm_analyst",
+        "role_name": "长期投资分析师",
+        "direction": "bull",
+        "confidence": 0.73,
+        "score_hint": 85,
+        "one_liner": "3年视角可持有，定投优于追高。",
+        "reasoning": "定投适配较好，前提是能穿越中等回撤。",
+        "evidence": ["sip.suitable=true", "sip.score=84"],
+        "risks": ["一次性高位买入放大回撤体感"],
+        "invalidators": ["投资期限缩短到1年以内"]
+      },
+      {
+        "role_id": "contrarian_analyst",
+        "role_name": "反方分析师",
+        "direction": "bear",
+        "confidence": 0.67,
+        "score_hint": 62,
+        "one_liner": "规模与持仓滞后可能造成过度自信。",
+        "reasoning": "高分不等于低风险，规模与漂移都是隐患。",
+        "evidence": ["scale_yi=312.5", "style_drift.level=轻度"],
+        "risks": ["回撤中误判风格失效"],
+        "invalidators": ["规模回落且风格重新收敛"]
+      }
+    ],
+    "bull_case": [
+      "中长期业绩与经理稳定性仍在",
+      "定投适配较好"
+    ],
+    "bear_case": [
+      "规模偏大",
+      "回撤中等，弱市体验一般"
+    ],
+    "watchpoints": [
+      "经理是否变更",
+      "风格漂移是否升温",
+      "同类替代是否反超"
+    ],
+    "data_gaps": [
+      "晨星评级缺失",
+      "持仓截至季报"
+    ],
+    "decision_tags": ["建议继续持有", "建议定投"]
   },
-  "charts": {},
+  "charts": {
+    "score_radar": {
+      "labels": ["收益", "风险控制", "经理", "稳定性", "规模流动性"],
+      "values": [88, 76, 84, 78, 80]
+    },
+    "nav_marks": [],
+    "reference_lines": [],
+    "peer_scatter": {
+      "x_label": "最大回撤(%)",
+      "y_label": "近1年收益(%)",
+      "points": [
+        {"code": "005827", "x": -22.4, "y": 18.2, "is_primary": true}
+      ]
+    }
+  },
   "render": {
     "theme": "dark_terminal",
+    "lang": "zh-CN",
+    "title": "易方达蓝筹精选混合（005827）基金决策看板",
     "html_path": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
-    "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html"
+    "pdf_path": null,
+    "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
+    "sections": [
+      "hero",
+      "plain_summary",
+      "nav",
+      "action_map",
+      "metrics",
+      "scores",
+      "returns_risk",
+      "portfolio",
+      "manager",
+      "risks",
+      "peers",
+      "debate",
+      "data_quality",
+      "glossary"
+    ],
+    "highlight_code": "005827",
+    "mobile_first": true,
+    "show_disclaimer": true,
+    "generated_by": "generate_fund_dashboard.py"
   }
 }
 ```
 
-> 注意：上例为“结构最小合法样例”，真实深度分析需补全净值序列、同类多只、经理与持仓等，不可拿空壳直接对用户交付。
+说明：
+
+- 这是 **最小可验收 deep 样例**，真实流水线应补全 `nav_series` 长度、`manager.managers`、`portfolio.top_holdings` 等
+- `debate.votes` 必须 6 条齐全
+- `peers` 完整模式不得为空（示例给了 4 只）
 
 ---
 
-## 28. 与脚本的字段所有权
+## 28. 与其它规范的关系
 
-| 脚本 | 主要写入 |
+| 文件 | 关系 |
 |---|---|
-| `fetch_fund_data.py` | `profile` `metrics` `nav_series` `returns` `risk` `portfolio` `manager` 初值 |
-| `scoring_model.py` | `scores` `summary` 初稿 `sip` 初稿 |
-| `detect_style_drift.py` | `style_drift` |
-| `auto_peers.py` | `peers` `better_choices` `peer_errors` |
-| `debate_engine.py` / AI-native | `debate` |
-| `merge_debate.py` | 合并 `debate`，可回写 `summary.decision_tag` |
-| `render_dashboard.py` | 只读；写 HTML；可回填 `render.html_path` |
-| `generate_fund_dashboard.py` | 串联全部并做验收 |
+| `references/scoring-model.md` | `scores.weights/breakdown/explain` 的计分来源 |
+| `references/ai_native_debate.md` | `debate` 的角色、投票、action 映射 |
+| `references/data-sources.md` | `data_quality.sources` 与交叉校验阈值 |
+| `SKILL.md` Completion Gate | 本 schema 的验收最低集必须对齐 |
+| `scripts/render_dashboard.py` | 只读本 schema，不猜字段 |
+| `scripts/merge_debate.py` | 把辩论 JSON 写回 `dash.debate` |
 
-冲突处理：
+更新原则：
 
-1. 公告/A 级源 > 聚合 B 级源  
-2. 辩论可改 `decision_tag`，但不得改原始净值与持仓事实  
-3. 任何回写后必须重跑 validate + `test -s html`
+1. 先改 schema，再改渲染器与抓取器
+2. 新增字段必须有默认值策略（`null` / `[]` / `{}`）
+3. 删除字段前确认无脚本读写
+4. `schema_version` 发生破坏性变更时递增
 
 ---
 
 ## 29. 版本
 
 - `schema_version`: `1.0.0`
-- 兼容策略：新增可选字段不升主版本；删除/改名关键键必须升主版本并同步 SKILL Completion Gate
+- 适用 skill: `china-fund-deep-analysis`
+- 状态: 可落盘、可机器校验
 ```
----
+
 
