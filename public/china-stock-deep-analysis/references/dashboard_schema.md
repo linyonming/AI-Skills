@@ -1018,17 +1018,3 @@ def validate(dash: dict, quick: bool = False) -> None:
   },
   "render": {"theme": "dark_terminal", "eli5": ["偏股混合", "有波动", "更适合定投"]}
 }
-```
-
-保存为：
-
-`public/china-fund-deep-analysis/references/dashboard_schema.md`
-```
-
----
-
-与现有文档对齐点：
-
-- 决策标签、五维权重、置信度与 `SKILL.md` / `scoring-model.md` 一致  
-- 验收键：`summary` / `metrics` / `nav_series` / `risks` / `peers` / `debate.*`  
-- 输出路径：`fund_{code}_{YYYYMMDD}.html`  
