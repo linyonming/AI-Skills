@@ -630,9 +630,6 @@
   }
 ]
 ```
-
----
-
 ## 16. `risks[]`（风险热力卡）
 
 ```json
@@ -653,19 +650,9 @@
     "level": "中",
     "severity": "high",
     "summary": "策略辨识度与主经理绑定较深。",
-    "evidence": ["is_primary=true", "recent_change=false"],
-    "monitor": "基金经理变更公告、管理费/策略说明更新",
-    "mitigation": "设置“经理离任即复盘”规则"
-  },
-  {
-    "id": "size",
-    "title": "规模约束",
-    "level": "中",
-    "severity": "medium",
-    "summary": "规模偏大，可能影响调仓灵活度。",
-    "evidence": ["scale_yi=312.5"],
-    "monitor": "季报规模、申赎净流入",
-    "mitigation": "若规模继续膨胀且业绩钝化，降低预期"
+    "evidence": ["is_primary=true", "recent_change=false", "tenure_years=7.6"],
+    "monitor": "公告、经理页、基金公司人事变动",
+    "mitigation": "经理离任即冻结加仓并重评"
   },
   {
     "id": "style_drift",
@@ -673,19 +660,51 @@
     "level": "低",
     "severity": "medium",
     "summary": "存在轻度漂移，尚未颠覆原叙事。",
-    "evidence": ["style_drift.level=轻度"],
-    "monitor": "季报行业分布与换手率",
-    "mitigation": "漂移升至中度以上时降级动作标签"
+    "evidence": ["style_drift.level=轻度", "turnover_rate=120.5"],
+    "monitor": "季报行业分布、换手率、前十大变化",
+    "mitigation": "漂移升至中度以上时降为观察"
+  },
+  {
+    "id": "size",
+    "title": "规模风险",
+    "level": "中",
+    "severity": "medium",
+    "summary": "规模偏大，可能影响调仓灵活度。",
+    "evidence": ["scale_yi=312.5"],
+    "monitor": "季末规模、净申赎、流动性环境",
+    "mitigation": "避免在拥挤阶段大幅加仓"
+  },
+  {
+    "id": "data_lag",
+    "title": "持仓滞后",
+    "level": "低",
+    "severity": "medium",
+    "summary": "持仓为季报口径，不是实时仓位。",
+    "evidence": ["portfolio.as_of=2026-03-31", "lag_note=持仓截至季报"],
+    "monitor": "最新季报/年报披露日",
+    "mitigation": "结论标注时效；重大判断等新持仓验证"
   }
 ]
 ```
 
-约束：
+### 字段说明
 
-- `level`：`高` | `中` | `低`
-- `severity`：`high` | `medium` | `low`（控制展示排序）
+| 字段 | 说明 |
+|---|---|
+| `id` | 稳定英文键，便于去重与前端图标映射 |
+| `title` | 中文短标题 |
+| `level` | `高` / `中` / `低` |
+| `severity` | 展示优先级：`high` / `medium` / `low`（高风险红卡优先） |
+| `summary` | ≤2 句 |
+| `evidence` | 可追溯事实/指标 |
+| `monitor` | 怎么跟踪 |
+| `mitigation` | 怎么缓释 |
+
+规则：
+
 - 完整模式至少 3 条；快速模式至少 2 条
-- 高风险卡必须有 `monitor` + `mitigation`
+- 高风险必须排在数组前面
+- 禁止空 `risks` 仍声称深度分析
 
 ---
 
@@ -693,45 +712,79 @@
 
 ```json
 {
-  "grade": "B",
+  "overall": "B",
   "confidence": "medium",
   "sources": [
-    {"name": "天天基金", "level": "B", "used_for": ["净值", "收益", "经理"]},
-    {"name": "东方财富基金", "level": "B", "used_for": ["净值复核", "持仓", "规模"]},
-    {"name": "基金定期报告", "level": "A", "used_for": ["持仓截至日", "规模确认"]}
+    {
+      "name": "天天基金",
+      "level": "B",
+      "fields": ["nav", "returns", "manager", "scale"],
+      "checked_at": "2026-05-11T11:50:00+08:00"
+    },
+    {
+      "name": "东方财富基金",
+      "level": "B",
+      "fields": ["nav", "returns", "portfolio"],
+      "checked_at": "2026-05-11T11:51:00+08:00"
+    },
+    {
+      "name": "基金季报/公告",
+      "level": "A",
+      "fields": ["portfolio", "scale", "manager_change"],
+      "checked_at": "2026-05-11T11:52:00+08:00"
+    }
   ],
   "cross_checks": [
     {
       "field": "return_1y",
+      "sources": ["天天基金", "东方财富基金"],
       "status": "ok",
-      "detail": "天天基金与东财差异 < 0.3pct"
+      "diff": 0.2,
+      "note": "差异小于阈值"
     },
     {
       "field": "nav",
+      "sources": ["天天基金", "东方财富基金"],
       "status": "ok",
-      "detail": "双源净值一致"
+      "diff": 0.0,
+      "note": null
     }
   ],
-  "missing_fields": ["morningstar_rating", "sortino"],
+  "verified": ["nav双源", "1Y收益双源", "经理任期与公告一致"],
+  "pending": ["晨星评级未取到", "Alpha/Beta 为估算"],
+  "missing_fields": ["morningstar_rating", "risk.var_95"],
   "anomalies": [],
   "stale_fields": [
-    {"field": "portfolio", "as_of": "2026-03-31", "note": "季报持仓滞后"}
+    {
+      "field": "portfolio",
+      "as_of": "2026-03-31",
+      "note": "持仓披露滞后"
+    }
   ],
   "notes": [
-    "公开聚合数据可用于快速研究，关键结论已尽量双源校验",
-    "不构成投资建议"
+    "公开信息研究，不构成投资建议",
+    "风险指标按近3年窗口估算，未扣申购赎回费"
   ]
 }
 ```
 
-`grade`：
+### 约束
 
-- `A`：关键字段以公告/报告为主且交叉验证充分
-- `B`：聚合源为主，关键项已复核
-- `C`：缺失较多或冲突未解
-- `D`：不可用，只允许观望结论
+- `overall`：`A` | `B` | `C` | `D`（与 SKILL Data Trust Model 一致）
+- 净值/关键收益尽量有双源 `cross_checks`
+- 有异常时 `anomalies` 必填，例如：
 
-渲染：单独“数据可信度”模块，必须展示来源等级、已校验项、待确认项。
+```json
+{
+  "field": "return_1y",
+  "severity": "high",
+  "message": "两源相差超过阈值，已采用东财并降置信度",
+  "values": {"天天基金": 18.2, "东方财富基金": 21.0}
+}
+```
+
+- `missing_fields` 与页面“数据局限”同步
+- `overall=C/D` 或关键缺失 ≥2 时，`summary.confidence` 不得为 `high`
 
 ---
 
@@ -739,40 +792,61 @@
 
 ```json
 [
-  {"term": "最大回撤", "plain": "这段时间从最高点跌下去最深有多疼"},
-  {"term": "夏普比率", "plain": "每多承担一点波动，多拿到多少回报"},
-  {"term": "Alpha", "plain": "相对基准/市场多出来的本事，不是跟着涨那部分"},
-  {"term": "Beta", "plain": "跟市场同涨同跌的敏感度"},
-  {"term": "定投", "plain": "固定节奏分批买，减少一次性买在高点的风险"},
-  {"term": "风格漂移", "plain": "基金实际持仓风格跟它原本标签越来越不像"}
+  {
+    "term": "最大回撤",
+    "plain": "从阶段最高点跌到最低点最多亏多少，衡量最疼的一段。"
+  },
+  {
+    "term": "夏普比率",
+    "plain": "多承担一单位波动，大概换来多少超额回报；越高通常越好。"
+  },
+  {
+    "term": "Alpha",
+    "plain": "剔除市场涨跌后，基金经理可能创造的超额部分。"
+  },
+  {
+    "term": "Beta",
+    "plain": "相对市场的敏感度；接近1表示跟市场起伏差不多。"
+  },
+  {
+    "term": "定投",
+    "plain": "按固定节奏分批买入，用来摊薄成本，不保证盈利。"
+  },
+  {
+    "term": "风格漂移",
+    "plain": "基金实际持仓风格偏离既有标签或历史习惯。"
+  },
+  {
+    "term": "同类排名百分位",
+    "plain": "数字越小越好；18 表示大约排在前 18%。"
+  }
 ]
 ```
 
-建议 5–10 条，短句白话。
+要求：
+
+- 8–12 条足够
+- 每条必须有白话 `plain`
+- 按基金类型可增删（ETF 加“跟踪误差/折溢价”；货基弱化 Alpha）
 
 ---
 
-## 19. `debate`（博弈结果）
+## 19. `debate`（多智能体博弈）
 
-与 `references/ai_native_debate.md` 对齐；合并后最小可用集：
+与 `references/ai_native_debate.md` 对齐；渲染器读此字段。
 
 ```json
 {
   "mode": "ai_native",
   "fallback": false,
-  "votes": [
-    {
-      "role_id": "manager_analyst",
-      "role_name": "基金经理分析师",
-      "direction": "bull",
-      "confidence": 0.78,
-      "one_liner": "经理稳定，中长期可持有。",
-      "reasoning": "……",
-      "evidence": ["tenure_years=7.6"],
-      "risks": ["经理离任"],
-      "invalidators": ["核心经理离任"]
-    }
-  ],
+  "direction": "bull",
+  "confidence": "medium",
+  "bull_pct": 67,
+  "bear_pct": 17,
+  "neutral_pct": 17,
+  "summary": "整体偏多，适合持有/定投，但回撤与规模限制激进加仓。",
+  "action": "建议定投",
+  "key_level": "核心经理离任，或回撤跌破近3年警戒带（约-25%）时停止加仓并复盘",
   "tally": {
     "bull": 4,
     "bear": 1,
@@ -781,31 +855,58 @@
     "bear_pct": 17,
     "neutral_pct": 17
   },
-  "direction": "bull",
-  "confidence": "medium",
-  "bull_pct": 67,
-  "bear_pct": 17,
-  "summary": "整体偏多，适合持有/定投，不宜追高猛加。",
-  "action": "建议定投",
-  "key_level": "核心经理离任，或回撤跌破近3年警戒带（约-25%）需复盘",
-  "bull_case": ["经理稳定", "中长期业绩仍有优势"],
-  "bear_case": ["规模偏大", "回撤中等"],
-  "watchpoints": ["经理变更", "风格漂移", "同类替代"],
-  "data_gaps": ["晨星评级缺失"]
+  "votes": [
+    {
+      "role_id": "manager_analyst",
+      "role_name": "基金经理分析师",
+      "direction": "bull",
+      "confidence": 0.78,
+      "score_hint": 84,
+      "one_liner": "经理稳定，是中长期持有加分项。",
+      "reasoning": "任期长、未见近期核心更换。",
+      "evidence": ["tenure_years=7.6", "recent_change=false"],
+      "risks": ["能力圈切换可能削弱叙事"],
+      "invalidators": ["核心经理离任"]
+    }
+  ],
+  "bull_case": [
+    "中长期业绩与经理稳定性仍在",
+    "定投适配较好"
+  ],
+  "bear_case": [
+    "规模偏大",
+    "回撤中等，弱市体验一般"
+  ],
+  "watchpoints": [
+    "经理是否变更",
+    "风格漂移是否升温",
+    "同类替代是否反超"
+  ],
+  "data_gaps": [
+    "晨星评级缺失",
+    "持仓截至季报"
+  ],
+  "decision_tags": ["建议继续持有", "建议定投"]
 }
 ```
 
-验收硬条件：
+### 验收
 
-- `votes` 必须 6 条（跳过博弈除外）
+完整模式（未 `--no-debate`）必须：
+
+- `votes` 长度为 6
 - `summary` / `action` / `key_level` 非空
-- `action` 必须落在允许决策标签集合
+- `action` ∈ 允许决策标签
+- `fallback=true` 时，`meta.debate_fallback=true`；默认还应尝试 AI-native 覆盖
+
+快速模式：
+
+- 可简化 votes，但若开启博弈，仍建议保留 `summary/action/key_level`
+- 用户明确跳过博弈：`debate` 可为 `{}`，渲染器隐藏区块
 
 ---
 
-## 20. `charts` / `render`
-
-### `charts`
+## 20. `charts`（图辅助层）
 
 ```json
 {
@@ -817,24 +918,42 @@
     {"y": 1.05, "label": "定投参考成本示意", "type": "sip"},
     {"y_pct": -20, "label": "警戒回撤线", "type": "risk"}
   ],
-  "quadrant": {
-    "x_field": "max_drawdown",
-    "y_field": "return_3y",
-    "primary_code": "005827"
+  "score_radar": {
+    "labels": ["收益", "风险控制", "经理", "稳定性", "规模流动性"],
+    "values": [88, 76, 84, 78, 80]
+  },
+  "peer_scatter": {
+    "x_label": "最大回撤(%)",
+    "y_label": "近1年收益(%)",
+    "points": [
+      {"code": "005827", "x": -22.4, "y": 18.2, "is_primary": true},
+      {"code": "260108", "x": -19.0, "y": 16.5, "is_primary": false}
+    ]
   }
 }
 ```
 
-### `render`
+说明：
+
+- 无图数据时键可空，但推荐完整模式给 `score_radar`
+- `peer_scatter` 用于收益-回撤象限
+- 渲染器不得因缺可选图表而失败
+
+---
+
+## 21. `render`（渲染与交付控制）
 
 ```json
 {
   "theme": "dark_terminal",
-  "language": "zh-CN",
-  "title": "易方达蓝筹精选混合 · 基金决策看板",
+  "lang": "zh-CN",
+  "title": "易方达蓝筹精选混合（005827）基金决策看板",
+  "html_path": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
+  "pdf_path": null,
+  "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
   "sections": [
     "hero",
-    "beginner",
+    "plain_summary",
     "nav",
     "action_map",
     "metrics",
@@ -848,42 +967,68 @@
     "data_quality",
     "glossary"
   ],
+  "highlight_code": "005827",
   "mobile_first": true,
-  "show_debate": true,
-  "show_peers": true,
-  "footer": "公开信息研究，不构成投资建议"
+  "show_disclaimer": true,
+  "generated_by": "generate_fund_dashboard.py"
 }
 ```
 
-快速模式可隐藏：`peers` 深表、完整 `portfolio`、部分 `debate` 细节；但 `show_debate` 若为 true，仍需有非空摘要。
+规则：
+
+- `html_path` 必须与最终附件一致
+- 发 Telegram 前：`test -s html_path`
+- `media_line` 仅用于流水线返回值；聊天里附件指令单独成行
+- `pdf_path` 仅用户明确要求 PDF 时生成
 
 ---
 
-## 21. 模式差异
+## 22. 模式差异
 
-| 字段 | quick | deep | compare |
-|---|---|---|---|
-| `nav_series` | ≥60 日 | ≥180 日 | 主标的完整，对比可简化 |
-| `peers` | 可 `[]` | ≥4（含主） | ≥2，强调相对排序 |
-| `debate` | 可简化但仍建议有 | 必填完整 6 票 | 可按主标的生成 |
-| `portfolio` | 可粗 | 尽量完整 | 可只保留集中度 |
-| `better_choices` | 可选 | 建议有 | 重点输出 |
+### 快速模式 `meta.quick_mode=true`
+
+必填：
+
+- `summary` / `profile`（可简） / `metrics` / `scores`
+- `nav_series`（≥60 日）
+- `risks`（≥2）
+- `data_quality`
+- `peers` 键存在，值可 `[]`
+- `debate` 可跳过或极简
+
+可省略深挖：
+
+- 完整 `portfolio.top_holdings` 解析
+- 完整同类 4–6 只
+- 完整六角色长 reasoning
+
+### 完整模式
+
+必填：最低验收集 + 非空 `peers` + 完整 `debate`（除非用户关闭）
+
+### 多基对比模式 `meta.mode=compare`
+
+- 主对象仍写 top-level
+- 其余全部进 `peers`
+- `better_choices` 给出首选/备选
+- `charts.peer_scatter` 与对比表必须可用
 
 ---
 
-## 22. 流水线 IO 约定
+## 23. 流水线 I/O 约定
 
-`generate_fund_dashboard.py --json` 建议打印：
+`generate_fund_dashboard.py --json` 成功示例：
 
 ```json
 {
   "ok": true,
   "code": "005827",
   "html": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
-  "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
   "work_json": "fund_work/005827_dash.json",
+  "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
+  "decision_tag": "建议定投",
+  "score_total": 86.0,
   "debate_fallback": false,
-  "quick_mode": false,
   "warnings": []
 }
 ```
@@ -901,81 +1046,84 @@
 }
 ```
 
-只有 `ok=true` 且 `test -s html` 通过，才允许对外发送 `MEDIA:` 行。
+禁止：`ok=false` 仍输出可发送的 `MEDIA:` 行。
 
 ---
 
-## 23. 字段校验伪代码
+## 24. Completion Gate（机器校验伪码）
 
 ```python
-REQUIRED_TOP = [
-    "meta", "summary", "metrics", "scores", "nav_series",
-    "risks", "peers", "data_quality", "debate"
-]
+import json
+from pathlib import Path
 
 ALLOWED_ACTIONS = {
     "建议继续持有", "建议定投", "建议减仓",
     "建议止盈", "建议观望", "不建议新增"
 }
 
-def validate(dash: dict, quick=False):
-    for k in REQUIRED_TOP:
-        assert k in dash, f"missing {k}"
-    assert dash["summary"].get("one_liner")
-    assert dash["summary"].get("decision_tag") in ALLOWED_ACTIONS
-    assert dash["metrics"]
-    assert isinstance(dash["nav_series"], list) and len(dash["nav_series"]) >= (60 if quick else 180)
-    assert isinstance(dash["risks"], list) and len(dash["risks"]) >= (2 if quick else 3)
+def validate_dash(path, html_path, quick=False, debate_required=True):
+    d = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert d.get("summary"), "missing summary"
+    assert d.get("metrics"), "missing metrics"
+    assert d.get("nav_series"), "missing nav_series"
+    assert d.get("risks"), "missing risks"
+    assert "peers" in d, "missing peers key"
     if not quick:
-        assert len(dash.get("peers") or []) >= 4, "deep mode requires peers"
-    debate = dash.get("debate") or {}
-    if dash.get("meta", {}).get("debate_enabled", True):
+        assert d["peers"], "empty peers in deep mode"
+
+    s = d["summary"]
+    assert s.get("one_liner") and s.get("decision_tag") in ALLOWED_ACTIONS
+    assert 1 <= int(s.get("star", 0)) <= 5
+    assert s.get("confidence") in {"high", "medium", "low"}
+
+    if debate_required and not d.get("meta", {}).get("quick_mode"):
+        debate = d.get("debate") or {}
         assert debate.get("votes"), "missing debate.votes"
-        assert debate.get("summary") and debate.get("action") and debate.get("key_level")
-        assert debate["action"] in ALLOWED_ACTIONS
-        if not debate.get("fallback"):
+        assert debate.get("summary"), "missing debate.summary"
+        assert debate.get("action") in ALLOWED_ACTIONS
+        assert debate.get("key_level"), "missing debate.key_level"
+        if debate.get("mode") == "ai_native" or not debate.get("fallback", False):
             assert len(debate["votes"]) == 6
+
+    hp = Path(html_path)
+    assert hp.exists() and hp.stat().st_size > 0, "html missing or empty"
     return True
 ```
 
 ---
 
-## 24. 渲染字段映射（给 `render_dashboard.py`）
+## 25. 字段类型速查
 
-| 页面区块 | 主字段 |
-|---|---|
-| Hero 决策区 | `summary` + `scores.total` + `profile.name/code` |
-| 小白速读 | `summary.headline/audience/not_for` + 精简 `metrics` |
-| 净值走势 | `nav_series` + `drawdown_series` + `charts` |
-| 操作地图 | `action_map` |
-| 核心数据卡 | `metrics` + `profile` |
-| 评分环 | `scores` |
-| 业绩风险 | `returns` + `risk` |
-| 持仓风格 | `portfolio` + `style_drift` |
-| 经理卡 | `manager` |
-| 风险热力 | `risks` |
-| 同类对比 | `peers` + `better_choices` |
-| 博弈裁定 | `debate` |
-| 可信度 | `data_quality` |
-| 术语小抄 | `glossary` |
+| 字段 | 类型 | 单位/枚举 |
+|---|---|---|
+| 收益/回撤/波动 | number | 百分比，1 位小数 |
+| 净值 | number | 元，4 位小数常用 |
+| 规模 `scale_yi` | number | 亿元 |
+| 百分位 `peer_rank_*_pct` | number | 越小越好 |
+| 评分 | number | 0–100 |
+| 星级 | int | 1–5 |
+| 置信度 | string | high/medium/low |
+| 决策标签 | string | 6 个固定中文标签 |
+| 日期 | string | `YYYY-MM-DD` |
+| 时间戳 | string | ISO8601 + 时区 |
 
 ---
 
-## 25. Anti-patterns
+## 26. 反模式
 
-- 用股票字段名冒充基金字段（如把 `kline` 当主序列）
-- 完整模式 `peers=[]` 还输出“深度对比”
-- 编造 `morningstar_rating` / `alpha` / 持仓权重
-- `decision_tag` 写自由文案（如“可以看看”）
-- `nav_series` 倒序或日期重复
+- 用股票字段（PE/PB/K线买卖点）冒充基金看板
+- 完整模式 `peers=[]` 还显示“同类对比完成”
+- 编造 `morningstar_rating` / Alpha / 持仓
 - 持仓不写 `as_of` / `lag_note`
-- `debate.fallback=true` 当最终深度稿且不标注
-- HTML 路径写到临时目录
-- 缺 `data_quality` 仍声称“已交叉验证”
+- `decision_tag` 自造“强烈买入”“核心推荐”
+- `debate.votes` 不足 6 个却当终稿
+- HTML 写到 `/tmp/...` 仍发 `MEDIA:`
+- 关键收益单源且与另一源冲突时不降级 `data_quality`
+- 快速模式与完整模式字段混用却不标 `meta.mode`
 
 ---
 
-## 26. Minimal deep-mode skeleton
+## 27. 最小合法样例（deep，删减展示）
 
 ```json
 {
@@ -983,7 +1131,7 @@ def validate(dash: dict, quick=False):
     "schema_version": "1.0.0",
     "skill": "china-fund-deep-analysis",
     "code": "005827",
-    "name": "示例基金",
+    "name": "易方达蓝筹精选混合",
     "share_class": "A",
     "fund_type": "hybrid_equity",
     "mode": "deep",
@@ -994,60 +1142,124 @@ def validate(dash: dict, quick=False):
     "html_path": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html"
   },
   "summary": {
-    "one_liner": "综合 80 分，建议继续持有",
-    "decision_tag": "建议继续持有",
+    "headline": "中长期可持有，回撤中等，适合分批定投",
+    "one_liner": "易方达蓝筹精选综合86分，建议定投",
+    "decision_tag": "建议定投",
     "star": 4,
-    "score_total": 80,
+    "score_total": 86.0,
     "confidence": "medium",
     "disclaimer": "基于公开信息研究，不构成投资建议"
   },
-  "profile": {"code": "005827", "name": "示例基金", "share_class": "A"},
-  "metrics": {"return_1y": 0, "return_3y": 0, "max_drawdown": 0, "sharpe": null},
+  "profile": {"code": "005827", "name": "易方达蓝筹精选混合", "fund_type": "hybrid_equity"},
+  "metrics": {"nav": 1.2345, "return_1y": 18.2, "return_3y": 42.5, "max_drawdown": -22.4, "sharpe": 1.42},
   "scores": {
-    "total": 80,
-    "breakdown": {
-      "return": 80, "risk": 80, "manager": 80,
-      "stability": 80, "size_liquidity": 80
-    }
+    "total": 86.0,
+    "breakdown": {"return": 88, "risk": 76, "manager": 84, "stability": 78, "size_liquidity": 80},
+    "explain": {"return": "中长期收益较好", "risk": "回撤中等", "manager": "经理稳定", "stability": "轻度漂移", "size_liquidity": "规模偏大"}
   },
-  "nav_series": [],
-  "drawdown_series": [],
+  "nav_series": [{"date": "2025-05-12", "nav": 1.10, "acc_nav": 2.00}],
+  "drawdown_series": [{"date": "2025-05-12", "drawdown": 0.0}],
   "returns": {},
-  "risk": {},
-  "portfolio": {},
-  "manager": {},
-  "style_drift": {},
-  "sip": {},
-  "action_map": {},
-  "peers": [{"code": "005827", "is_primary": true}],
+  "risk": {"window": "3y", "max_drawdown": -22.4, "sharpe": 1.42},
+  "portfolio": {"as_of": "2026-03-31", "top_holdings": [], "lag_note": "持仓截至季报"},
+  "manager": {"managers": [], "recent_change": false, "score": 84},
+  "style_drift": {"level": "轻度", "score": 28},
+  "sip": {"suitable": true, "score": 84},
+  "action_map": {
+    "hold": {"title": "继续持有条件", "items": ["经理未离任"]},
+    "sip": {"title": "定投观察区", "items": ["期限≥3年"]},
+    "reduce": {"title": "减仓警戒区", "items": ["漂移升温"]},
+    "take_profit": {"title": "止盈条件", "items": ["达到目标收益"]},
+    "invalidate": {"title": "失效警戒", "items": ["经理离任"], "key_level": "回撤跌破警戒带需复盘"}
+  },
+  "peers": [
+    {"code": "005827", "name": "易方达蓝筹精选混合", "is_primary": true, "score_total": 86.0}
+  ],
   "better_choices": [],
   "peer_errors": [],
-  "risks": [],
-  "data_quality": {"grade": "B", "missing_fields": [], "sources": []},
-  "glossary": [],
+  "risks": [
+    {
+      "id": "drawdown",
+      "title": "回撤风险",
+      "level": "中",
+      "severity": "high",
+      "summary": "回撤中等",
+      "evidence": ["max_drawdown=-22.4"],
+      "monitor": "跟踪当前回撤",
+      "mitigation": "控制仓位"
+    }
+  ],
+  "data_quality": {
+    "overall": "B",
+    "confidence": "medium",
+    "sources": [],
+    "cross_checks": [],
+    "verified": ["nav双源"],
+    "pending": ["晨星评级缺失"],
+    "missing_fields": ["morningstar_rating"],
+    "anomalies": [],
+    "notes": ["不构成投资建议"]
+  },
+  "glossary": [
+    {"term": "最大回撤", "plain": "从高点到低点最多跌了多少"}
+  ],
   "debate": {
-    "votes": [],
-    "summary": "",
-    "action": "建议观望",
-    "key_level": ""
+    "mode": "ai_native",
+    "fallback": false,
+    "direction": "bull",
+    "confidence": "medium",
+    "bull_pct": 67,
+    "bear_pct": 17,
+    "summary": "偏多，适合定投",
+    "action": "建议定投",
+    "key_level": "经理离任或回撤破警戒带需复盘",
+    "votes": [
+      {"role_id": "manager_analyst", "role_name": "基金经理分析师", "direction": "bull", "confidence": 0.7, "one_liner": "经理稳定", "reasoning": "任期长", "evidence": ["tenure"], "risks": ["离任"], "invalidators": ["离任"]},
+      {"role_id": "risk_analyst", "role_name": "风险分析师", "direction": "neutral", "confidence": 0.7, "one_liner": "回撤中等", "reasoning": "波动不低", "evidence": ["dd"], "risks": ["弱市"], "invalidators": ["回撤恶化"]},
+      {"role_id": "quant_analyst", "role_name": "量化分析师", "direction": "bull", "confidence": 0.7, "one_liner": "中长期统计不弱", "reasoning": "1Y/3Y尚可", "evidence": ["ret"], "risks": ["回吐"], "invalidators": ["排名滑坡"]},
+      {"role_id": "allocator_analyst", "role_name": "资产配置分析师", "direction": "bull", "confidence": 0.7, "one_liner": "可作主动权益仓", "reasoning": "定位清晰", "evidence": ["role"], "risks": ["拥挤"], "invalidators": ["更优替代"]},
+      {"role_id": "longterm_analyst", "role_name": "长期投资分析师", "direction": "bull", "confidence": 0.7, "one_liner": "适合3年+定投", "reasoning": "定投适配高", "evidence": ["sip"], "risks": ["短持有"], "invalidators": ["期限过短"]},
+      {"role_id": "contrarian_analyst", "role_name": "反方分析师", "direction": "bear", "confidence": 0.7, "one_liner": "规模与滞后是隐患", "reasoning": "高分不等于低风险", "evidence": ["scale"], "risks": ["误判"], "invalidators": ["规模优化"]}
+    ]
   },
   "charts": {},
-  "render": {"theme": "dark_terminal", "language": "zh-CN"}
+  "render": {
+    "theme": "dark_terminal",
+    "html_path": "/root/.openclaw/workspace/outputs/fund_005827_20260511.html",
+    "media_line": "MEDIA:/root/.openclaw/workspace/outputs/fund_005827_20260511.html"
+  }
 }
 ```
 
-注意：上表是键完整性骨架，不代表可通过业务验收；真正交付前仍需补齐净值序列、同类、风险卡与六角色博弈。
-```
+> 注意：上例为“结构最小合法样例”，真实深度分析需补全净值序列、同类多只、经理与持仓等，不可拿空壳直接对用户交付。
 
 ---
 
-### 状态
+## 28. 与脚本的字段所有权
 
-| 文档 | 状态 |
+| 脚本 | 主要写入 |
 |---|---|
-| `SKILL.md` | 已给 |
-| `references/scoring-model.md` | 已给 |
-| `references/dashboard_schema.md` | **本次完整版** |
-| `references/ai_native_debate.md` | 已给 |
+| `fetch_fund_data.py` | `profile` `metrics` `nav_series` `returns` `risk` `portfolio` `manager` 初值 |
+| `scoring_model.py` | `scores` `summary` 初稿 `sip` 初稿 |
+| `detect_style_drift.py` | `style_drift` |
+| `auto_peers.py` | `peers` `better_choices` `peer_errors` |
+| `debate_engine.py` / AI-native | `debate` |
+| `merge_debate.py` | 合并 `debate`，可回写 `summary.decision_tag` |
+| `render_dashboard.py` | 只读；写 HTML；可回填 `render.html_path` |
+| `generate_fund_dashboard.py` | 串联全部并做验收 |
+
+冲突处理：
+
+1. 公告/A 级源 > 聚合 B 级源  
+2. 辩论可改 `decision_tag`，但不得改原始净值与持仓事实  
+3. 任何回写后必须重跑 validate + `test -s html`
 
 ---
+
+## 29. 版本
+
+- `schema_version`: `1.0.0`
+- 兼容策略：新增可选字段不升主版本；删除/改名关键键必须升主版本并同步 SKILL Completion Gate
+```
+---
+
